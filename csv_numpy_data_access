@@ -1,0 +1,75 @@
+import csv
+import numpy as np
+
+
+def get_shot_frames(csv_file: str, header_present=True):
+    return_frames = []
+    with open(csv_file) as csvfile:
+        shots_reader = csv.reader(csvfile)
+        if header_present:
+            next(shots_reader)
+        for row in shots_reader:
+            return_frames.append(int(row[1]))
+    return return_frames
+
+
+def get_shot_frames_numpy(numpy_file: str):
+    return_frames = []
+    shot_dtype = np.dtype(
+        [
+            ("number", int),
+            ("name", str)
+        ]
+    )
+    data = np.loadtxt(numpy_file, dtype=shot_dtype)
+    for frame in data:
+        return_frames.append(int(frame["number"]))
+    return return_frames
+
+
+def compare_data():
+    shot_frames = get_shot_frames(csv_file='video_shots.csv')
+    shuttle_shot_frames = get_shot_frames_numpy(numpy_file='test_shots.txt')
+    det_shots = []
+    miss_shots = []
+    false_shots = []
+    i = 0
+    i_end = len(shot_frames)
+    j = 0
+    j_end = len(shuttle_shot_frames)
+    with open('shot_compare.csv', 'w+') as write_file:
+        csv_writer = csv.writer(write_file)
+        while i < i_end and j < j_end:
+            shot = shot_frames[i]
+            det = shuttle_shot_frames[j]
+            if det - 11 < shot < det + 11:
+                det_shots.append((shot, det))
+                csv_writer.writerow([shot, det, None])
+                i += 1
+                j += 1
+            elif shot < det:
+                miss_shots.append(shot)
+                csv_writer.writerow([shot, None, None])
+                i += 1
+            else:
+                false_shots.append(det)
+                csv_writer.writerow([None, None, det])
+                j += 1
+
+        while i < i_end or j < j_end:
+            if i < i_end:
+                miss_shots.append(shot_frames[i])
+                csv_writer.writerow([shot_frames[i], None, None])
+                i += 1
+
+                if j < j_end:
+                    false_shots.append(shuttle_shot_frames[j])
+                    csv_writer.writerow([None, shuttle_shot_frames[j], None])
+                    j += 1
+
+    print("end")
+    return None
+
+
+if __name__ == '__main__':
+    compare_data()
